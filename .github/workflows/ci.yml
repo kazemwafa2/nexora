@@ -42,10 +42,12 @@ jobs:
         run: sh tools/build_core.sh
 
       - name: Build APK
-        env:
-          ANDROID_JAR: ${{ env.ANDROID_HOME }}/platforms/android-35/android.jar
-          TARGET_SDK: '35'
-        run: sh tools/build_apk_termux.sh
+        run: |
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_JAR="$ANDROID_HOME/platforms/android-35/android.jar"
+          export TARGET_SDK=35
+          test -f "$ANDROID_JAR"
+          sh tools/build_apk_termux.sh
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
