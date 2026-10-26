@@ -1,0 +1,5 @@
+package com.nexora.core.engine;
+
+public enum EngineState {
+    NOT_INSTALLED, INSTALLING, INSTALLED, VERIFYING, READY, STARTING, RUNNING, STOPPING, FAILED, DISABLED
+}

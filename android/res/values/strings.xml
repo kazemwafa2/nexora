@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nexora Desktop</string>
+    <string name="tagline">A World of Possibilities, in Your Pocket.</string>
+    <string name="start">Start</string>
+    <string name="app_files">Files</string>
+    <string name="app_settings">Settings</string>
+    <string name="app_diag">Diagnostics</string>
+    <string name="app_about">About</string>
+    <string name="limit_reached">Window limit reached for this mode</string>
+    <string name="mode_label">Mode</string>
+    <string name="theme_label">Theme</string>
+    <string name="language_label">Language</string>
+    <string name="override_label">Mode override</string>
+    <string name="tap_to_change">Tap a row to change it</string>
+    <string name="files_root_note">App-private storage only. Shared-storage access is not implemented yet.</string>
+    <string name="diag_running">Running diagnostics…</string>
+    <string name="diag_share">Share report</string>
+    <string name="about_line1">Nexora Desktop — early development build</string>
+    <string name="about_line2">Designer and developer: Kazem Rafiei, Jaghori, Ghazni, Afghanistan</string>
+    <string name="about_line3">No device brand or model has been verified as compatible.</string>
+    <string name="about_line4">Windows program engine: not installed, not tested.</string>
+    <string name="about_line5">Nexora license: undecided. Third-party status: config/dependencies.csv</string>
+    <string name="empty_folder">(empty)</string>
+    <string name="engine_status">Windows engine: unavailable (not installed)</string>
+</resources>

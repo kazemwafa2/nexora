@@ -1,0 +1,1 @@
+package android.app; import android.content.pm.ConfigurationInfo; public class ActivityManager { public static class MemoryInfo { public long totalMem; } public void getMemoryInfo(MemoryInfo i) {} public boolean isLowRamDevice() { return false; } public ConfigurationInfo getDeviceConfigurationInfo() { return null; } }

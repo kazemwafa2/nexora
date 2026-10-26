@@ -1,0 +1,16 @@
+# name,version,spdx,origin,verified(yes/no),scope(app|engine-pack)
+# "verified=yes" only after the license was read from the official repository for that exact version.
+Nexora core (this repo),0.1,UNDECIDED,own code,no,app
+Winlator,11.2,UNDECIDED,upstream brunodev85/winlator (license sources conflict),no,engine-pack
+Wine,10.10,LGPL-2.1-or-later,winehq.org (not yet verified),no,engine-pack
+Box64,0.4.4,MIT,ptitSeb/box64 (secondary sources only),no,engine-pack
+glibc (termux-pacman patches),2.39,LGPL-2.1-or-later,termux-pacman/glibc-packages,no,engine-pack
+Mesa Turnip,26.2.0,MIT,mesa3d.org,no,engine-pack
+Mesa VirGL,23.1.9,MIT,mesa3d.org,no,engine-pack
+Mesa Zink,22.2.5,MIT,mesa3d.org,no,engine-pack
+DXVK,1.10.3,Zlib,doitsujin/dxvk,no,engine-pack
+VKD3D,2.14.1,LGPL-2.1-or-later,winehq vkd3d,no,engine-pack
+cnc-ddraw,6.6,MIT,FunkyFr3sh/cnc-ddraw,no,engine-pack
+Vortek,2.1,UNKNOWN,Winlator component (source and license not found),no,engine-pack
+Gladio,1.1,UNKNOWN,Winlator component (source and license not found),no,engine-pack
+Windows runtime DLLs (vcrun/directx/wmdecoder),n/a,proprietary,Microsoft proprietary,no,engine-pack

@@ -1,0 +1,1 @@
+package android.content.res; import java.util.Locale; public class Configuration { public static final int UI_MODE_NIGHT_MASK = 0x30; public static final int UI_MODE_NIGHT_YES = 0x20; public int uiMode; public Configuration() {} public Configuration(Configuration o) {} public void setLocale(Locale l) {} public void setLayoutDirection(Locale l) {} }

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dari (fa-AF). Copy of the Persian text for now; needs review by a native Dari speaker. -->
+<resources>
+    <string name="app_name">Nexora Desktop</string>
+    <string name="tagline">دنیایی از امکانات، در جیب تو.</string>
+    <string name="start">شروع</string>
+    <string name="app_files">فایل‌ها</string>
+    <string name="app_settings">تنظیمات</string>
+    <string name="app_diag">آزمون خودکار</string>
+    <string name="app_about">دربارهٔ برنامه</string>
+    <string name="limit_reached">در این حالت، تعداد پنجره‌ها به حد مجاز رسیده است</string>
+    <string name="mode_label">حالت</string>
+    <string name="theme_label">پوسته</string>
+    <string name="language_label">زبان</string>
+    <string name="override_label">تغییر دستی حالت</string>
+    <string name="tap_to_change">برای تغییر روی هر ردیف بزنید</string>
+    <string name="files_root_note">فقط حافظهٔ خصوصی برنامه. دسترسی به حافظهٔ مشترک هنوز پیاده‌سازی نشده است.</string>
+    <string name="diag_running">در حال اجرای آزمون‌ها…</string>
+    <string name="diag_share">ارسال گزارش</string>
+    <string name="about_line1">Nexora Desktop — نسخهٔ اولیهٔ در حال توسعه</string>
+    <string name="about_line2">طراح و برنامه‌نویس: کاظم رفیعی، جاغوری، غزنی، افغانستان</string>
+    <string name="about_line3">هیچ برند یا مدلی هنوز به‌عنوان سازگار تأیید نشده است.</string>
+    <string name="about_line4">موتور اجرای برنامه‌های ویندوز: نصب نشده و آزمایش نشده.</string>
+    <string name="about_line5">مجوز Nexora: هنوز تعیین نشده. وضعیت اجزای دیگر: config/dependencies.csv</string>
+    <string name="empty_folder">(خالی)</string>
+    <string name="engine_status">موتور ویندوز: در دسترس نیست (نصب نشده)</string>
+</resources>
