@@ -116,7 +116,7 @@ BADGING=$(aapt2 dump badging "$WORK/nexora-debug.apk" 2>/dev/null || true)
 if [ -n "$BADGING" ]; then
   echo "$BADGING" | grep -q "package: name='$APP_ID'" || die "badging: applicationId is not $APP_ID"
   echo "$BADGING" | grep -q "targetSdkVersion:'$TARGET_SDK'" || die "badging: targetSdkVersion is not $TARGET_SDK"
-  echo "$BADGING" | grep -q "sdkVersion:'$MIN_SDK'" || { echo "Actual APK badging output:" >&2; echo "$BADGING" >&2; die "badging: minSdkVersion is not $MIN_SDK"; }
+  echo "$BADGING" | grep -q "minSdkVersion:'$MIN_SDK'" || { echo "Actual APK badging output:" >&2; echo "$BADGING" >&2; die "badging: minSdkVersion is not $MIN_SDK"; }
 else
   echo "WARNING: 'aapt2 dump badging' gave no output; package/sdk values were not cross-checked"
 fi
