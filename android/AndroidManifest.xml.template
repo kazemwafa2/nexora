@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- applicationId is NOT final (decision E1/E2 pending). tools/build_apk_termux.sh substitutes the
-     @APPLICATION_ID@, @TARGET_SDK@ and @VERSION@ placeholders. -->
+<!-- The applicationId is NOT final (decision E1/E2 pending); tools/build_apk_termux.sh sets it with
+     the aapt2 option rename-manifest-package. The script also replaces the version and target-SDK
+     placeholders below and refuses to build if any placeholder is left. (Never put two hyphens in a
+     comment: XML forbids them.) -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.nexora.desktop"
     android:versionCode="1"

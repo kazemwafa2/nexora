@@ -23,4 +23,15 @@
     <string name="about_line5">Nexora license: undecided. Third-party status: config/dependencies.csv</string>
     <string name="empty_folder">(empty)</string>
     <string name="engine_status">Windows engine: unavailable (not installed)</string>
+    <string name="files_up">Up</string>
+    <string name="files_newfolder">+Folder</string>
+    <string name="files_copy">Copy</string>
+    <string name="files_cut">Cut</string>
+    <string name="files_paste">Paste</string>
+    <string name="files_delete">Delete</string>
+    <string name="files_confirm">Tap Delete again to confirm</string>
+    <string name="files_select">Select an item first</string>
+    <string name="files_done">Done</string>
+    <string name="files_failed">Failed:</string>
+    <string name="files_new_folder_name">New folder</string>
 </resources>

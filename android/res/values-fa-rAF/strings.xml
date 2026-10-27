@@ -24,4 +24,15 @@
     <string name="about_line5">مجوز Nexora: هنوز تعیین نشده. وضعیت اجزای دیگر: config/dependencies.csv</string>
     <string name="empty_folder">(خالی)</string>
     <string name="engine_status">موتور ویندوز: در دسترس نیست (نصب نشده)</string>
+    <string name="files_up">بالا</string>
+    <string name="files_newfolder">+پوشه</string>
+    <string name="files_copy">کپی</string>
+    <string name="files_cut">برش</string>
+    <string name="files_paste">چسباندن</string>
+    <string name="files_delete">حذف</string>
+    <string name="files_confirm">برای تأیید، دوباره «حذف» را بزنید</string>
+    <string name="files_select">ابتدا یک مورد را انتخاب کنید</string>
+    <string name="files_done">انجام شد</string>
+    <string name="files_failed">ناموفق:</string>
+    <string name="files_new_folder_name">پوشهٔ جدید</string>
 </resources>

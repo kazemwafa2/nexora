@@ -9,6 +9,7 @@ import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowInsets;
 
 import com.nexora.core.capability.DeviceFacts;
 import com.nexora.core.capability.Evidence;
@@ -21,6 +22,7 @@ import com.nexora.core.diag.DiagnosticsRunner;
 import com.nexora.core.diag.Redactor;
 import com.nexora.core.diag.Status;
 import com.nexora.core.diag.TestResult;
+import com.nexora.core.files.FileOps;
 import com.nexora.core.settings.Settings;
 import com.nexora.core.util.Clock;
 import com.nexora.core.util.Tri;
@@ -69,6 +71,13 @@ final class DesktopView extends View {
     private int lastX;
     private int lastY;
     private String clockText = "";
+    private int insL;
+    private int insT;
+    private int insR;
+    private int insB;
+    private int downX;
+    private int downY;
+    private boolean moved;
 
     DesktopView(Activity act, Settings settings) {
         super(act);
@@ -148,12 +157,38 @@ final class DesktopView extends View {
 
     // ------------------------------------------------------------------ layout
 
+    /** Usable width/height: the view minus system bars (navigation bar, cutout) reported by Android. */
+    private int vw() { return getWidth() - insL - insR; }
+
+    private int vh() { return getHeight() - insT - insB; }
+
+    @Override protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        requestApplyInsets();
+    }
+
+    @Override public WindowInsets onApplyWindowInsets(WindowInsets w) {
+        insL = w.getSystemWindowInsetLeft();
+        insT = w.getSystemWindowInsetTop();
+        insR = w.getSystemWindowInsetRight();
+        insB = w.getSystemWindowInsetBottom();
+        relayout();
+        invalidate();
+        return w;
+    }
+
     @Override protected void onSizeChanged(int w, int h, int ow, int oh) {
         super.onSizeChanged(w, h, ow, oh);
+        wallpaper = new LinearGradient(0, 0, 0, h, act.getColor(R.color.nexora_navy), act.getColor(R.color.nexora_blue_dark), Shader.TileMode.CLAMP);
+        relayout();
+    }
+
+    private void relayout() {
+        int w = vw();
+        int h = vh();
         int minW = (int) (240 * d);
         int minH = (int) (160 * d);
         if (w < minW || h < minH + tb) return;   // keep the previous layout for absurd sizes
-        wallpaper = new LinearGradient(0, 0, 0, h, act.getColor(R.color.nexora_navy), act.getColor(R.color.nexora_blue_dark), Shader.TileMode.CLAMP);
         if (wm == null) {
             wm = new WindowManagerModel(w, h, tb, MODEL_MAX_WINDOWS, (int) (44 * d), minW, minH, (int) (80 * d));
         } else {
@@ -165,18 +200,18 @@ final class DesktopView extends View {
 
     private int iconLeft(int i) {
         int gap = (int) (12 * d);
-        return rtl ? getWidth() - gap - iconSize() : gap;
+        return rtl ? vw() - gap - iconSize() : gap;
     }
 
     private int iconTop(int i) { return (int) (16 * d) + i * (iconSize() + (int) (16 * d)); }
 
-    private int startBtnLeft() { return rtl ? getWidth() - tb : 0; }
+    private int startBtnLeft() { return rtl ? vw() - tb : 0; }
 
     private int menuItemH() { return (int) (48 * d); }
 
-    private int menuLeft() { return rtl ? getWidth() - (int) (260 * d) : 0; }
+    private int menuLeft() { return rtl ? vw() - (int) (260 * d) : 0; }
 
-    private int menuTop() { return getHeight() - tb - APP_IDS.length * menuItemH() - (int) (40 * d); }
+    private int menuTop() { return vh() - tb - APP_IDS.length * menuItemH() - (int) (40 * d); }
 
     // ------------------------------------------------------------------ drawing
 
@@ -204,13 +239,15 @@ final class DesktopView extends View {
     }
 
     @Override protected void onDraw(Canvas c) {
-        int w = getWidth();
-        int h = getHeight();
         boolean dk = dark();
         p.setStyle(Paint.Style.FILL);
         p.setShader(wallpaper);
-        c.drawRect(0, 0, w, h, p);
+        c.drawRect(0, 0, getWidth(), getHeight(), p);
         p.setShader(null);
+        c.save();
+        c.translate(insL, insT);   // everything below lives inside the usable area
+        int w = vw();
+        int h = vh();
 
         int ice = act.getColor(R.color.nexora_ice);
         int cyan = act.getColor(R.color.nexora_cyan);
@@ -223,8 +260,11 @@ final class DesktopView extends View {
             int t = iconTop(i);
             p.setColor(cyan);
             c.drawRoundRect(l + 12 * d, t, l + iconSize() - 12 * d, t + iconSize() - 24 * d, 10 * d, 10 * d, p);
-            text(c, appLabel(APP_IDS[i]).substring(0, 1), l + iconSize() / 2f, t + iconSize() / 2f - 10 * d, navy, 22, true, false);
             p.setTextAlign(Paint.Align.CENTER);
+            p.setColor(navy);
+            p.setTextSize(22 * d);
+            p.setTypeface(Typeface.DEFAULT_BOLD);
+            c.drawText(appLabel(APP_IDS[i]).substring(0, 1), l + iconSize() / 2f, t + (iconSize() - 24 * d) / 2f + 8 * d, p);
             p.setColor(ice);
             p.setTextSize(11 * d);
             p.setTypeface(Typeface.DEFAULT);
@@ -251,6 +291,7 @@ final class DesktopView extends View {
             c.drawText(fit(notice, 300 * d, 13), w / 2f, h - tb - 30 * d, p);
             postInvalidateDelayed(3100L);
         }
+        c.restore();
     }
 
     private void drawWindow(Canvas c, DesktopWindow win, boolean dk, int cyan, int navy, int blueDark, int ice) {
@@ -297,7 +338,7 @@ final class DesktopView extends View {
         int l = menuLeft();
         int t = menuTop();
         int r = l + (int) (260 * d);
-        int b = getHeight() - tb;
+        int b = vh() - tb;
         p.setColor(dk ? 0xF0122D4B : 0xF0E6F7FF);
         c.drawRect(l, t, r, b, p);
         int fg = dk ? ice : navy;
@@ -325,7 +366,7 @@ final class DesktopView extends View {
         }
         // window buttons
         if (wm != null) {
-            int x = rtl ? getWidth() - tb - (int) (6 * d) : tb + (int) (6 * d);
+            int x = rtl ? vw() - tb - (int) (6 * d) : tb + (int) (6 * d);
             int bw = (int) (96 * d);
             for (DesktopWindow win : wm.windowsBottomToTop()) {
                 int l = rtl ? x - bw : x;
@@ -342,12 +383,15 @@ final class DesktopView extends View {
     // ------------------------------------------------------------------ touch
 
     @Override public boolean onTouchEvent(MotionEvent e) {
-        int x = (int) e.getX();
-        int y = (int) e.getY();
+        int x = (int) e.getX() - insL;
+        int y = (int) e.getY() - insT;
         int a = e.getAction();
         if (a == MotionEvent.ACTION_DOWN) {
             lastX = x;
             lastY = y;
+            downX = x;
+            downY = y;
+            moved = false;
             dragId = -1;
             dragMode = 0;
             onDown(x, y);
@@ -358,10 +402,25 @@ final class DesktopView extends View {
             int dy = y - lastY;
             if (dragMode == 1) wm.move(dragId, dx, dy);
             if (dragMode == 2) wm.resize(dragId, dx, dy);
+            if (dragMode == 3) {
+                if (!moved && Math.abs(y - downY) > 8 * d) moved = true;
+                Content ct = contents.get(Integer.valueOf(dragId));
+                DesktopWindow win = wm.get(dragId);
+                if (moved && ct != null && win != null) {
+                    int viewH = win.bounds().height() - wm.titleBarHeight();
+                    ct.scroll = Math.max(0, Math.min(ct.maxScroll(viewH), ct.scroll - dy));
+                }
+            }
             lastX = x;
             lastY = y;
             invalidate();
             return true;
+        }
+        if (a == MotionEvent.ACTION_UP && dragMode == 3 && !moved && wm != null) {
+            DesktopWindow win = wm.get(dragId);
+            Content ct = contents.get(Integer.valueOf(dragId));
+            if (win != null && ct != null) ct.tap(x, y, win.bounds().left, win.bounds().top + wm.titleBarHeight());
+            invalidate();
         }
         if (a == MotionEvent.ACTION_UP || a == MotionEvent.ACTION_CANCEL) {
             dragId = -1;
@@ -371,7 +430,7 @@ final class DesktopView extends View {
     }
 
     private void onDown(int x, int y) {
-        int h = getHeight();
+        int h = vh();
         if (startOpen) {
             int l = menuLeft();
             int t = menuTop();
@@ -411,8 +470,8 @@ final class DesktopView extends View {
                     dragId = win.id;
                     dragMode = 2;
                 } else {
-                    Content ct = contents.get(Integer.valueOf(win.id));
-                    if (ct != null) ct.tap(x, y, b.left, b.top + th);
+                    dragId = win.id;     // content: scroll on drag, tap on release
+                    dragMode = 3;
                 }
                 invalidate();
                 return;
@@ -437,7 +496,7 @@ final class DesktopView extends View {
             return;
         }
         if (wm == null) return;
-        int xx = rtl ? getWidth() - tb - (int) (6 * d) : tb + (int) (6 * d);
+        int xx = rtl ? vw() - tb - (int) (6 * d) : tb + (int) (6 * d);
         int bw = (int) (96 * d);
         for (DesktopWindow win : wm.windowsBottomToTop()) {
             int l = rtl ? xx - bw : xx;
@@ -467,7 +526,9 @@ final class DesktopView extends View {
             say(act.getString(R.string.limit_reached) + " (" + tier + ")");
             return;
         }
-        DesktopWindow win = wm.open(title, (int) (340 * d), (int) (320 * d));
+        int ww = Math.min((int) (360 * d), vw() - (int) (16 * d));
+        int hh = Math.min((int) (440 * d), vh() - tb - (int) (16 * d));
+        DesktopWindow win = wm.open(title, ww, hh);
         if (win == null) {
             say(act.getString(R.string.limit_reached));
             return;
@@ -484,20 +545,29 @@ final class DesktopView extends View {
     // ------------------------------------------------------------------ window contents
 
     private abstract class Content {
+        int scroll;
+
         abstract void draw(Canvas c, int l, int t, int r, int b, int fg);
 
         void tap(int x, int y, int l, int t) { }
 
+        /** Number of 26 dp text rows; used to limit scrolling. */
+        int rows() { return 0; }
+
+        int maxScroll(int viewH) { return Math.max(0, (int) (rows() * 26 * d) - viewH + (int) (8 * d)); }
+
         /** Draws text row `row` (26 dp high) below the title bar; tap handlers use the same row math. */
         void line(Canvas c, String s, int l, int t, int r, int row, int fg, boolean bold) {
-            float y = t + row * 26 * d + 19 * d;
+            float y = t + row * 26 * d + 19 * d - scroll;
             text(c, fit(s, r - l - 20 * d, 13), rtl ? r - 10 * d : l + 10 * d, y, fg, 13, bold, rtl);
         }
 
-        int rowAt(int y, int t) { return (int) ((y - t) / (26 * d)); }
+        int rowAt(int y, int t) { return (int) ((y - t + scroll) / (26 * d)); }
     }
 
     private final class AboutContent extends Content {
+        @Override int rows() { return 6; }
+
         @Override void draw(Canvas c, int l, int t, int r, int b, int fg) {
             int[] ids = {R.string.tagline, R.string.about_line1, R.string.about_line2, R.string.about_line3, R.string.about_line4, R.string.about_line5};
             for (int i = 0; i < ids.length; i++) line(c, act.getString(ids[i]), l, t, r, i, fg, i == 0);
@@ -505,6 +575,8 @@ final class DesktopView extends View {
     }
 
     private final class SettingsContent extends Content {
+        @Override int rows() { return 5; }
+
         @Override void draw(Canvas c, int l, int t, int r, int b, int fg) {
             String[] rows = {
                 act.getString(R.string.mode_label) + ": " + tier + " (auto: " + autoTier + ")",
@@ -543,15 +615,50 @@ final class DesktopView extends View {
     }
 
     private final class FilesContent extends Content {
-        private File root = act.getFilesDir();
+        private final File root = act.getFilesDir();
         private File cur = root;
+        private String selected;
+        private File clip;
+        private boolean clipCut;
+        private boolean confirmDelete;
+        private String msg = act.getString(R.string.files_root_note);
+        private final int[] toolbar = {R.string.files_up, R.string.files_newfolder, R.string.files_copy,
+            R.string.files_cut, R.string.files_paste, R.string.files_delete};
+
+        @Override int rows() { return FileOps.list(cur).size() + 2; }
 
         @Override void draw(Canvas c, int l, int t, int r, int b, int fg) {
-            line(c, act.getString(R.string.files_root_note), l, t, r, 0, fg, false);
-            String[] names = listing();
-            line(c, "/" + relative(), l, t, r, 1, fg, true);
-            for (int i = 0; i < names.length && i < 8; i++) line(c, names[i], l, t, r, i + 2, fg, false);
-            if (names.length == 0) line(c, act.getString(R.string.empty_folder), l, t, r, 2, fg, false);
+            List<FileOps.Entry> es = FileOps.list(cur);
+            if (es.isEmpty()) line(c, act.getString(R.string.empty_folder), l, t, r, 2, fg, false);
+            for (int i = 0; i < es.size(); i++) {
+                FileOps.Entry e = es.get(i);
+                String mark = e.name.equals(selected) ? "● " : "   ";
+                String label = mark + e.name + (e.directory ? "/" : "  (" + sizeText(e.size) + ")");
+                line(c, label, l, t, r, i + 2, fg, e.name.equals(selected));
+            }
+            // fixed header (toolbar + status) drawn over the scrolling list
+            int keep = scroll;
+            scroll = 0;
+            p.setColor(dark() ? 0xFF1B2B40 : 0xFFF2F8FC);
+            c.drawRect(l, t, r, t + 52 * d, p);
+            int colW = (r - l) / toolbar.length;
+            for (int i = 0; i < toolbar.length; i++) {
+                int idx = rtl ? toolbar.length - 1 - i : i;
+                p.setTextAlign(Paint.Align.CENTER);
+                p.setTextSize(11 * d);
+                p.setTypeface(Typeface.DEFAULT_BOLD);
+                boolean off = (toolbar[idx] == R.string.files_paste && clip == null);
+                p.setColor(off ? 0x66808080 : fg);
+                c.drawText(fit(act.getString(toolbar[idx]), colW - 4 * d, 11), l + i * colW + colW / 2f, t + 18 * d, p);
+            }
+            line(c, "/" + relative() + (msg.length() > 0 ? "   " + msg : ""), l, t, r, 1, fg, false);
+            scroll = keep;
+        }
+
+        private String sizeText(long n) {
+            if (n < 1024) return n + " B";
+            if (n < 1024 * 1024) return (n / 1024) + " KB";
+            return (n / (1024 * 1024)) + " MB";
         }
 
         private String relative() {
@@ -560,30 +667,82 @@ final class DesktopView extends View {
             return a.length() > base.length() ? a.substring(base.length() + 1) : "";
         }
 
-        private String[] listing() {
-            File[] fs = cur.listFiles();
-            List<String> out = new ArrayList<String>();
-            if (!cur.equals(root)) out.add("..");
-            if (fs != null) {
-                for (File f : fs) out.add(f.isDirectory() ? f.getName() + "/" : f.getName());
-            }
-            return out.toArray(new String[0]);
+        private void report(FileOps.Result r) {
+            msg = r.isOk() ? act.getString(R.string.files_done) : act.getString(R.string.files_failed) + " " + r.code;
         }
 
         @Override void tap(int x, int y, int l, int t) {
+            if (y - t < 52 * d) {
+                if (y - t < 26 * d) toolbarTap(x, l);
+                invalidate();
+                return;
+            }
             int row = rowAt(y, t) - 2;
-            String[] names = listing();
-            if (row < 0 || row >= names.length) return;
-            String n = names[row];
-            if (n.equals("..")) cur = cur.getParentFile();
-            else if (n.endsWith("/")) cur = new File(cur, n.substring(0, n.length() - 1));
+            List<FileOps.Entry> es = FileOps.list(cur);
+            if (row < 0 || row >= es.size()) return;
+            FileOps.Entry e = es.get(row);
+            confirmDelete = false;
+            if (e.name.equals(selected) && e.directory) {
+                cur = new File(cur, e.name);
+                selected = null;
+                scroll = 0;
+            } else {
+                selected = e.name;
+            }
             invalidate();
+        }
+
+        private void toolbarTap(int x, int l) {
+            Rect b = null;
+            int width = 0;
+            for (DesktopWindow w : wm.windowsBottomToTop()) {
+                if (contents.get(Integer.valueOf(w.id)) == this) {
+                    b = w.bounds();
+                    width = b.width();
+                }
+            }
+            if (b == null || width <= 0) return;
+            int col = (x - l) * toolbar.length / width;
+            if (col < 0 || col >= toolbar.length) return;
+            int action = toolbar[rtl ? toolbar.length - 1 - col : col];
+            if (action != R.string.files_delete) confirmDelete = false;
+            if (action == R.string.files_up) {
+                if (!cur.equals(root)) {
+                    cur = cur.getParentFile();
+                    selected = null;
+                    scroll = 0;
+                }
+            } else if (action == R.string.files_newfolder) {
+                report(FileOps.newFolder(root, cur, act.getString(R.string.files_new_folder_name)));
+            } else if (action == R.string.files_copy || action == R.string.files_cut) {
+                if (selected == null) { msg = act.getString(R.string.files_select); return; }
+                clip = new File(cur, selected);
+                clipCut = action == R.string.files_cut;
+                msg = act.getString(R.string.files_done);
+            } else if (action == R.string.files_paste) {
+                if (clip == null) return;
+                FileOps.Result r = clipCut ? FileOps.move(root, clip, cur) : FileOps.copy(root, clip, cur);
+                report(r);
+                if (r.isOk() && clipCut) clip = null;
+            } else if (action == R.string.files_delete) {
+                if (selected == null) { msg = act.getString(R.string.files_select); return; }
+                if (!confirmDelete) {
+                    confirmDelete = true;
+                    msg = act.getString(R.string.files_confirm);
+                    return;
+                }
+                report(FileOps.delete(root, new File(cur, selected)));
+                confirmDelete = false;
+                selected = null;
+            }
         }
     }
 
     private final class DiagContent extends Content {
         private volatile List<String> lines = new ArrayList<String>();
         private volatile String reportText = "";
+
+        @Override int rows() { return lines.size(); }
 
         DiagContent() {
             lines.add(act.getString(R.string.diag_running));
@@ -608,13 +767,18 @@ final class DesktopView extends View {
             recomputeTier();
             trimToLimit();
             List<String> l = new ArrayList<String>();
+            int tsdk = act.getApplicationInfo().targetSdkVersion;
             l.add("PASS " + rep.count(Status.PASS) + "   FAIL " + rep.count(Status.FAIL) + "   UNKNOWN " + rep.count(Status.UNKNOWN));
-            for (TestResult tr : rep.results()) l.add(tr.status + "  " + tr.id);
+            l.add("targetSdk " + tsdk + "   device API " + android.os.Build.VERSION.SDK_INT);
+            for (TestResult tr : rep.results()) {
+                l.add(tr.status + "  " + tr.id);
+                if (tr.reason.length() > 0) l.add("      " + tr.reason);
+            }
             l.add("Tier: " + autoTier + (lastDecision != null && !lastDecision.blockers(Tier.ADVANCED).isEmpty()
                     ? "  (Advanced blocked: " + lastDecision.blockers(Tier.ADVANCED).size() + ")" : ""));
             l.add(act.getString(R.string.diag_share));
             lines = l;
-            reportText = Redactor.redact(rep.toText() + "\nTier: " + autoTier + "\n" + blockerText());
+            reportText = Redactor.redact("targetSdk: " + tsdk + "\ndevice API: " + android.os.Build.VERSION.SDK_INT + "\n\n" + rep.toText() + "\nTier: " + autoTier + "\n" + blockerText());
             invalidate();
         }
 
@@ -628,7 +792,7 @@ final class DesktopView extends View {
 
         @Override void draw(Canvas c, int l, int t, int r, int b, int fg) {
             List<String> ls = lines;
-            for (int i = 0; i < ls.size() && i < 12; i++) line(c, ls.get(i), l, t, r, i, fg, i == 0);
+            for (int i = 0; i < ls.size(); i++) line(c, ls.get(i), l, t, r, i, fg, i == 0);
         }
 
         @Override void tap(int x, int y, int l, int t) {

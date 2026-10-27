@@ -56,4 +56,18 @@ public class LicensePolicyTest {
         assertEquals(1, LicensePolicy.blockers(l, "app").size());
         assertEquals(1, LicensePolicy.blockers(l, "engine-pack").size());
     }
+
+    public void testOwnCodeDoesNotBlockButThirdPartyUnverifiedStillDoes() {
+        List<DependencyEntry> l = java.util.Arrays.asList(
+                new DependencyEntry("Nexora core", "0.1", "UNDECIDED", "own code", false, "app"),
+                new DependencyEntry("lib", "1", "MIT", "github", false, "app"));
+        List<DependencyEntry> b = LicensePolicy.blockers(l, "app");
+        assertEquals(1, b.size());
+        assertEquals("lib", b.get(0).name);
+    }
+
+    public void testShippedInventoryHasNoAppScopeBlockers() throws Exception {
+        List<DependencyEntry> all = DependencyCsv.read(new File("config/dependencies.csv"));
+        assertEquals(0, LicensePolicy.blockers(all, "app").size());
+    }
 }

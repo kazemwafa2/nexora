@@ -21,6 +21,7 @@ builds with Termux `javac` + `dx`):
 | `window` | pure window-manager model (z-order, move/resize/snap/maximize, rotation reflow) |
 | `settings` | validated settings with versioned migrations (en / fa / fa-AF, RTL) |
 | `license` | license policy and dependency inventory (`config/dependencies.csv`) |
+| `files` | file-manager operations confined to a root: list, new folder, copy, move, delete (no overwrite, no symlink following, root protected) |
 | `util` | strict JSON, SHA-256, clock |
 
 ## Android layer (`android/`) — written, type-checked only against hand-written stubs

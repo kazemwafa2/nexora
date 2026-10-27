@@ -1,58 +1,77 @@
-name: Nexora Android APK
-
+# NOT YET VERIFIED ON GITHUB: written from the checklist, never executed by its author.
+# JDK 21 on purpose: it is the version the core tests and the -Werror build were verified with.
+# Every step fails loudly (no "|| true"); an APK artifact is uploaded only if every earlier step passed.
+name: nexora-build
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
-
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 40
+    env:
+      PLATFORM: android-34
+      BUILD_TOOLS: 34.0.0
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v5
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
-      - name: Install Android packages
-        run: |
-          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
-          export PATH="$ANDROID_HOME/cmdline-tools/16.0/bin:$PATH"
-          export PATH="$ANDROID_HOME/platform-tools:$PATH"
-          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
-          echo "ANDROID_HOME=$ANDROID_HOME"
-
-      - name: Verify Android SDK
-        run: |
-          test -f "$ANDROID_HOME/platforms/android-35/android.jar"
-          command -v aapt2
-          command -v apksigner
-          command -v zipalign
-
-      - name: Build and test core
+      - name: Core tests (forbidden-API scan, -Werror compile, bytecode check, unit tests)
         run: sh tools/build_core.sh
 
-      - name: Build APK
-        run: |
-          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          export ANDROID_JAR="$ANDROID_HOME/platforms/android-35/android.jar"
-          export TARGET_SDK=35
-          test -f "$ANDROID_JAR"
-          sh tools/build_apk_termux.sh
+      - name: License inventory (fails on third-party blockers in the app)
+        run: java -cp build/main com.nexora.core.license.DependencyCsv config/dependencies.csv
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Android layer type-check against hand-written stubs
+        run: sh tools/check_android_layer.sh
+
+      - name: Locate Android SDK, accept licenses, install platform and build-tools
+        run: |
+          set -eu
+          ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKM" ]; then
+            echo "sdkmanager not found at $SDKM"; ls -la "$ANDROID_HOME" "$ANDROID_HOME/cmdline-tools" || true; exit 1
+          fi
+          yes | "$SDKM" --licenses > /dev/null
+          "$SDKM" "platforms;$PLATFORM" "build-tools;$BUILD_TOOLS"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_JAR=$ANDROID_HOME/platforms/$PLATFORM/android.jar" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/build-tools/$BUILD_TOOLS" >> "$GITHUB_PATH"
+
+      - name: Verify android.jar and build tools are present
+        run: |
+          set -eu
+          test -f "$ANDROID_JAR" || { echo "android.jar missing: $ANDROID_JAR"; exit 1; }
+          for t in aapt2 d8 apksigner zipalign keytool zip javac; do
+            command -v "$t" >/dev/null || { echo "missing tool: $t"; exit 1; }
+          done
+          aapt2 version
+
+      - name: Build APK (targetSdk 34, then targetSdk 28 for the exec comparison)
+        run: |
+          set -eu
+          TARGET_SDK=34 sh tools/build_apk_termux.sh
+          TARGET_SDK=28 sh tools/build_apk_termux.sh
+
+      - name: Verify signatures and APK contents
+        run: |
+          set -eu
+          for a in build/apk-34/nexora-debug.apk build/apk-28/nexora-debug.apk; do
+            test -s "$a" || { echo "missing or empty: $a"; exit 1; }
+            apksigner verify --verbose "$a"
+            unzip -l "$a" | grep -E 'classes\.dex|AndroidManifest\.xml|resources\.arsc'
+            unzip -l "$a" | grep -q 'classes\.dex' || { echo "no classes.dex in $a"; exit 1; }
+          done
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: nexora-debug-apk
-          path: build/apk-35/nexora-debug.apk
+          name: nexora-debug-apks
+          path: build/apk-*/nexora-debug.apk
           if-no-files-found: error
-          retention-days: 7

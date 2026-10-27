@@ -31,11 +31,16 @@ public final class LicensePolicy {
         return Verdict.UNCONFIRMED;
     }
 
-    /** Entries that block a release of the given scope. */
+    static boolean isOwnCode(DependencyEntry d) {
+        return d.origin != null && d.origin.toLowerCase(Locale.ROOT).equals("own code");
+    }
+
+    /** Entries that block a release of the given scope (third-party only). */
     public static List<DependencyEntry> blockers(List<DependencyEntry> all, String scope) {
         List<DependencyEntry> out = new ArrayList<DependencyEntry>();
         for (DependencyEntry d : all) {
             if (!scope.equals(d.scope)) continue;
+            if (isOwnCode(d)) continue;   // the project's own code is governed by its own (still undecided) license
             Verdict v = evaluate(d);
             if (v == Verdict.DENIED || v == Verdict.UNCONFIRMED) out.add(d);
         }
