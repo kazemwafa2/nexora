@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 40
     env:
       PLATFORM: android-34
-      BUILD_TOOLS: 34.0.0
+      BUILD_TOOLS: 35.0.0
     steps:
       - uses: actions/checkout@v4
 
